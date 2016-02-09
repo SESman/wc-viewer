@@ -2,6 +2,7 @@
 <html lang="en">
 
   <head>
+    {{ headContent() }}
     <!-- Basic Page Needs
 ================================================== -->
   <meta charset="utf-8">
@@ -16,7 +17,7 @@
 <!-- Title and meta description
 ================================================== -->
 
-  <title>College Scorecard Shiny demo app</title>
+  <title>Marine Wildlife Telemetry Explorer</title>
   <meta name="description" content="">
   <meta property="og:description" content="" />
 
@@ -50,17 +51,15 @@
 ================================================== -->
   <link rel="stylesheet" href="assets/css/google-fonts.css">
   <link rel="stylesheet" href="assets/css/main.css">
-
+  
   <style type="text/css">
   header {
     display: none;
     background-color: #112e51;
-    background-image: url(header-image.jpg);
     background-size: cover;
     background-position: center;
     text-align: center;
     color: white;
-    text-shadow: rgba(0, 0, 0, 0.7) 0 0 30px;
   }
   @media screen {
     header {
@@ -68,275 +67,143 @@
     }
   }
   header h3 {
-    padding: 100px 10px 10px 10px;
+    padding: 60px 10px 10px 10px;
     margin: 0;
   }
   header p {
     margin: 0;
-    padding: 0 10px 80px 10px;
-  }
-  header p a, header p a:active, header p a:visited {
-    color: white;
-  }
-  section#loading-spinner {
-    padding: 100px;
-    text-align: center;
-  }
-  section#college-search {
-    padding-top: 20px;
-    padding-bottom: 20px;
-    background-color: #f1f1f1;
-  }
-  div[role=search] {
-    width: 550px;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  section {
-    padding: 30px 0;
-  }
-  section#school-details {
-    position: relative;
-    padding-top: 0;
-  }
-  .school-summary {
-    font-family: 'Merriweather', 'Georgia', 'Times New Roman', serif;
-    font-size: 20px;
-  }
-  .school-badges {
-    margin-top: 30px;
-    color: #5C626C;
-  }
-  .school-badges>div {
-    display: inline-block;
-    width: 60px;
-    text-align: center;
-  }
-  .school-badges span {
-    font-size: 13px;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  #map {
-    display: none;
-  }
-  @media screen and (min-width: 600px) {
-    #map {
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 50%;
-      right: 0;
-      bottom: 0;
-    }
-  }
-  @media screen and (max-width: 600px) {
-    #map {
-      display: block;
-      position: relative;
-      margin-top: 30px;
-      margin-bottom: -30px;
-      width: 100% !important;
-      height: 400px !important;
-    }
-  }
-  section#school-details-2 {
-  }
-  /*
-  section#school-details-2 .usa-width-one-third {
-    background-color: #F0F0F0;
-    padding-left: 30px;
-    padding-bottom: 20px;
-  }
-  */
-  section#school-details-2 h6 {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 0;
-  }
-  section#school-details-2 div.shiny-html-output {
-    font-size: 48px;
-    color: #2BB673;
-  }
-  section#school-details-2 .nat_avg {
-    font-size: 13px;
-    color: #5b616b;
-    text-transform: uppercase;
-  }
-  section#school-details-4 {
-    background-color: #323A45;
-    color: #FFFFFF;
-    min-height: 30px;
-  }
-  #cost_by_income th {
-    text-align: left;
-  }
-  #cost_by_income th, #cost_by_income td {
-    padding: 0.8rem;
-  }
-  #cost_by_income th+th, #cost_by_income td+td {
-    text-align: right;
-  }
-  
-  #cost_by_year {
-    margin: 34px 0;
-  }
-  
-  footer {
-    padding: 20px 0;
-    background-color: #f1f1f1 !important;
-    display: none;
+    padding: 0 10px 40px 10px;
   }
   footer p {
     font-size: 14px;
   }
-  footer a {
-    text-decoration: underline;
+
+  section#loading-spinner {
+    padding: 60px;
+    text-align: center;
   }
-  
-  .github-ribbon:hover img {
-    opacity: 1.0 !important;
-    transition: opacity 0.5s;
+  section#input-data {
+    padding: 20px 0 20px 0;
   }
-  
-  [data-display-if] {
-    display: none;
+  section#map-data-header {
+    background-color: #dce4ef;
+    color: #212121;
+  }
+  section#map-data-header h3 {
+    margin: 0;
+    padding: 5px 5px 5px 15px;
+  }
+  section#dive-data-header {
+    background-color: #dce4ef;
+    color: #212121;
+  }
+  section#dive-data-header h3 {
+    margin: 0;
+    padding: 5px 5px 5px 15px;
+  }
+  div#map {
+    padding: 10px 0 25px 0px;
   }
   </style>
-  <script>
-    $(document).on("keydown", "#search", function(e) {
-      if (e.which == 13) {
-        $("#search_button").click();
-      }
-    });
-  </script>
-
-  </head>
+</head>
 
   <body>
 
     <header role="banner">
-      <h3 class="usa-display">College Scorecard</h3>
-      <p class="usa-font-lead">A <a href="http://shiny.rstudio.com/">Shiny</a> demo app by <a href="https://www.rstudio.com/">RStudio</a></p>
+      <h3 class="usa-display">Marine Wildlife Telemetry Explorer</h3>
+      <p class="usa-font-lead">A collaboration between NOAA Fisheries and Wildlife Computers<br />for the exploration of telemetry data from marine wildlife</p>
     </header>
-
-    <section id="college-search">
-      <div class="usa-grid">
-        <div class="usa-width-one-whole">
-          <form class="usa-search usa-search-big" onsubmit="return false;">
-            <div role="search">
-              <label class="usa-sr-only" for="search-field-big">College name</label>
-              <input id="search" type="text" name="search" class="usa-search-input"
-                placeholder="College or city, e.g. Stanford or Boston"/>
-              <button id="search_button" type="button" class="usa-search-submit action-button">
-                <span class="usa-search-submit-text">Search</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-    
-    <section id="loading-spinner" data-display-if="!output.app_mode">
-      <div class="usa-grid">
-        <div class="usa-width-one-whole">
-          <img src="ring-alt.svg"/>
-        </div>
-      </div>
-    </section>
-
-    <section id="college-search-results" data-display-if="output.app_mode === 'search'">
-      <div class="usa-grid">
-        <div class="usa-width-one-whole">
-          {{ uiOutput("search_results") }}
-        </div>
-      </div>
-    </section>
-    
-    <section id="school-details" data-display-if="output.app_mode === 'details'">
-      <div class="usa-grid">
-        
+    <div class="usa-grid-full">
+        <div class="usa-alert usa-alert-warning">
+    <div class="usa-alert-body">
+      <h3 class="usa-alert-heading">Application Under Development</h3>
+      <p class="usa-alert-text">This web application is currently under development and subject to change at any time. Information provided and data representations my not be correct. Use with caution and please report any bugs or issues.</p>
+    </div>
+  </div>
+  </div>
+    <section id="input-data">
+    <div class="usa-grid">
         <div class="usa-width-one-half">
-          <h2>{{ textOutput("school_name", inline = TRUE) }}</h2>
-          <div class="school-summary school-city">
-            {{ textOutput("school_city", inline = TRUE) }}
+            <h4>UPLOAD A *.ZIP FILE</h4>
+              {{ uiOutput("zipFileInput") }}
+              <br />
+              <hr>
+            <h4>ENTER A PTT ID</h4>
+              <label for="ptt-id">PTT Integer</label>
+              <input id="ptt-id" name="ptt-id" type="number">
+              {{ uiOutput("keyFileInput") }}
+              <br />
+              {{ uiOutput("getDataButton")}}
+        </div>
+        <div class="usa-width-one-half">
+          <h4 class="usa-heading-alt">Purpose</h4>
+          <p>This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers are supported.</p>
+          <p>There are two methods for providing data:</p>
+          <h6 class="usa-heading-alt">WC Data Portal Zip File</h6>
+          <p>Upload a *.zip file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.</p>
+          <h6 class="usa-heading-alt">Get Data via Web Services</h6>
+          <p>If you have enabled web services on your Wildlife Computers Data Portal account, you can provide a PTT identifier and a web key file. The application will pull data directly from the portal.</p>
+        </div>
+        </div>
+        </section>
+        
+        <section id="map-data-header" data-display-if="output.app_mode === 'show_results'">
+          <div class="usa-grid">
+          <h3 class="usa-header">Argos and Fastloc Locations</h3>
           </div>
-          <div class="school-summary school-size">
-            {{ textOutput("school_size", inline = TRUE) }}
-          </div>
-          <div class="school-summary school-url">
-            {{ uiOutput("school_url", inline = TRUE) }}
-          </div>
-          <div class="school-badges">
-            {{ uiOutput("degree_type") }}
-            {{ uiOutput("school_ownership") }}
-            {{ uiOutput("school_locale") }}
-            {{ uiOutput("school_size_class") }}
+        </section>
+       <section id="map" data-display-if="output.app_mode === 'show_results'">
+        <div class="usa-grid">
+          <div class="usa-width-one-whole" id="map">
+            {{ leafletOutput("locations") }}
           </div>
         </div>
-      </div>
-      {{ leafletOutput("map", width = "auto", height = "auto") }}
-    </section>
+        </section>
+      <section id="dive-data-header" data-display-if="output.app_mode === 'show_results'">
+        <div class="usa-grid">
+          <h3 class="usa-header">Dive and Timeline Data {{ textOutput("date_range") }}</h3>
+        </div>
+        </section>
+      <section id="dive-data" data-display-if="output.app_mode === 'show_results'">
+        <div class="usa-grid">
+          <div class="usa-width-one-whole">
+            {{ conditionalPanel(
+        "output.dive_behav_vis!=0",
+        dygraphOutput("dives", height = "300px")
+      ) }}
+      {{ conditionalPanel(
+        "output.dive_histos_vis!=0",
+        dygraphOutput("dive_histos", height = "300px")
+      ) }}
+      {{ dygraphOutput("timelines", height = "250px") }}
+          </div>
+        </div>
+      </section>
       
-    <section id="school-details-2" data-display-if="output.app_mode === 'details'">
+  <footer class="usa-footer usa-footer-slim usa-sans" role="contentinfo">
+    <div class="usa-grid usa-footer-return-to-top">
+      <a href="#">Return to top</a>
+    </div>
+    <div class="usa-footer-secondary_section">
       <div class="usa-grid">
-        
-        <div class="usa-width-one-third">
-          <h6>Average Annual Cost</h6>
-          {{ uiOutput("cost") }}
-          <div class="nat_avg">National average: $15,628.42</div>
+        <div class="usa-footer-logo">
+          <img class="usa-footer-slim-logo-img" src="noaa-fisheries-rgb-stacked.png" alt="Logo image" style="padding-right: 25px">
         </div>
         <div class="usa-width-one-third">
-          <h6>Admission Rate</h6>
-          {{ uiOutput("admit_rate") }}
-          <div class="nat_avg">National average: 68.24%</div>
-        </div>
-        <div class="usa-width-one-third">
-          <h6>Salary After Attending</h6>
-          {{ uiOutput("salary") }}
-          <div class="nat_avg">National average: $33,137.77</div>
-        </div>
-        
-      </div>
-    </section>
-    
-    <section id="school-details-4" data-display-if="output.app_mode === 'details'">
-      <div class="usa-grid">
-        <div class="usa-width-one-half">
-          <h3>Average annual cost, by family income</h3>
-          {{ tableOutput("cost_by_income") }}
-        </div>
-        <div class="usa-width-one-half">
-          <h3>Average annual cost, over time</h3>
-          {{ plotOutput("cost_by_year", height = 235) }}
-        </div>
-      </div>
-    </section>
-    
-    {{ uiOutput("extras") }}
-    
-    <footer>
-      <div class="usa-grid">
-        <div class="usa-width-one-sixth">
-          <br/>
-        </div>
-        <div class="usa-width-one-third">
+          <h6>DISCLAIMERS</h6>
           <p>
-            This app was written using <a href="http://shiny.rstudio.com/">Shiny</a>, a web framework for <a href="http://www.r-project.org/">R</a>. You can find the source code for this app at <a href="https://github.com/jcheng5/scorecard-app">@jcheng5/scorecard-app</a>.
+            The scientific results and conclusions, as well as any views or opinions expressed herein, are those of the author(s) and do not necessarily reflect those of NOAA or the Department of Commerce.
           </p>
         </div>
-        <div class="usa-width-one-third">
+        <div class="usa-width-one-half">
+          <h6>&nbsp;</h6>
           <p>
-            Inspired by: <a href="https://collegescorecard.ed.gov/">College Scorecard</a><br/>
-            Data: <a href="https://collegescorecard.ed.gov/data/">College Scorecard dataset</a><br/>
-            Style: <a href="https://playbook.cio.gov/designstandards/">U.S. Web Design Standards</a>
+            This Shiny application was developed by scientists at the NOAA Fisheries Alaska Fisheries Science Center. Links and mentions of Wildlife Computers, RStudio and Shiny should not be considered an endorsement by NOAA Fisheries or the U.S. Federal Government.
           </p>
         </div>
+      </div>
       </div>
     </footer>
-
-    <a class="github-ribbon" href="https://github.com/jcheng5/scorecard-app"><img style="position: absolute; top: 0; right: 0; border: 0; opacity: 0.6; transition: opacity 0.5s;" src="https://camo.githubusercontent.com/a6677b08c955af8400f44c6298f40e7d19cc5b2d/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f677261795f3664366436642e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_gray_6d6d6d.png"></a>
   </body>
 
 </html>

@@ -7,6 +7,7 @@ library(xts)
 library(wcUtils)
 library(sp)
 library(leaflet)
+library(viridis)
 library(shinyjs)
 
 shinyServer(function(input, output, session) {
@@ -16,37 +17,60 @@ shinyServer(function(input, output, session) {
   # column will contain the local filenames where the data can
   # be found.
   
-  upload_ptt <- reactiveValues(
+  input_dat <- reactiveValues(
     dat_files = NULL,
     zipfile = NULL,
-    ptt = NULL
+    ptt = NULL,
+    data_load = FALSE,
+    select_deployid = FALSE,
+    id = NULL
   )
   
-  observe({
-    input$clearPTT
-    upload_ptt$zipfile <- NULL
-    upload_ptt$ptt <- NULL
-    upload_ptt$dat_files <- NULL
+  observeEvent(input$zipfile, {
+    input_dat$zipfile <- input$zipfile
+    input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
+    input_dat$dat_files <- unzip(input$zipfile$datapath,
+                          exdir = tempdir())
+    input_dat$data_load <- TRUE
   })
   
-  observeEvent(input$zipfile, {
-    upload_ptt$zipfile <- input$zipfile
-    upload_ptt$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
-    upload_ptt$dat_files <- unzip(input$zipfile$datapath,
-                          exdir = tempdir())
+  observeEvent(input$getWCdata,{
+    res <- wcUtils::wcPOST(keyfile = input$keyfile$datapath)
+    ptt_dat <- wcUtils::wcGetPttID(res,ptt=as.character(input_dat$ptt))
+    if(length(ptt_dat$ids) == 1) {
+      input_dat$id <- ptt_dat$id
+    } else if(nrow(subset(ptt_dat$df,!is.na(deployid))) == 1) {
+      input_dat$id <- ptt_dat$df$id[which(!is.na(ptt_dat$df$deployid))]
+      warning('multiple deployments identified; returning only with deployid')
+    } else {
+      warning('more than one deployid found for this PTT')
+      input_dat$select_deployid <- TRUE
+      input_dat$id <- NULL
+    }
+    if(!is.null(input_dat$id)) {
+      input_dat$zipfile <- wcUtils::wcGetZip(id=input_dat$id,keyfile=input$keyfile$datapath)
+      input_dat$dat_files <- unzip(input_dat$zipfile,
+                                   exdir = tempdir())
+      input_dat$data_load <- TRUE
+    }
   })
-
+  
+  output$app_mode <- reactive({
+    ifelse(input_dat$data_load,"show_results","input_only")
+  })
+  outputOptions(output, "app_mode", suspendWhenHidden = FALSE)
+  
   ptt <- reactive({
-    if(!is.null(upload_ptt$ptt)){
-      return(upload_ptt$ptt)
+    if(!is.null(input_dat$ptt)){
+      return(input_dat$ptt)
     } else {
       return(NULL)
     }
   })
   
   dat_files <- reactive({
-    if(!is.null(upload_ptt$dat_files)) {
-    return(upload_ptt$dat_files)
+    if(!is.null(input_dat$dat_files)) {
+    return(input_dat$dat_files)
     } else return(NULL)
   })
   
@@ -58,7 +82,7 @@ shinyServer(function(input, output, session) {
     return(res)
   })
   
-  locs <- reactive({
+  all_locs <- reactive({
     req(dat_files())
     locs_fastgps <- dat_files()[grep(paste0("*",ptt(),"-1-Locations.csv"), 
                                    dat_files())]
@@ -85,12 +109,15 @@ shinyServer(function(input, output, session) {
   })
   
   output$zipFileInput <- renderUI({
-    input$clearPTT
-    fileInput('zipfile', NULL, width="60%")
+    fileInput('zipfile', 'Upload Zip File')
   })
   
-  output$summary <- renderText({
-    return(paste("Uploaded file: ", upload_ptt$zipfile$name))
+  output$keyFileInput <- renderUI({
+    fileInput('keyfile', 'Upload Key File')
+  })
+  
+  output$getDataButton <- renderUI({
+    actionButton('getWCdata',label="Get Data from Wildlife Computers")
   })
   
   output$timelines <- renderDygraph({
@@ -186,6 +213,7 @@ shinyServer(function(input, output, session) {
         return(1)
       }
   })
+  outputOptions(output, 'dive_histos_vis', suspendWhenHidden = FALSE)
   
   output$dive_behav_vis <- reactive({
     t <- try(read.csv(behav_file()))
@@ -195,6 +223,7 @@ shinyServer(function(input, output, session) {
       return(1)
     }
   })
+  outputOptions(output, 'dive_behav_vis', suspendWhenHidden = FALSE)
   
   output$dive_histos <- renderDygraph({
     validate(need(histos(),"No Histos File Detected"))
@@ -225,19 +254,34 @@ shinyServer(function(input, output, session) {
       }
   })
   
-  output$locations <- renderLeaflet({
-    validate(need(locs(),"No Locations File Detected"))
-      locs <- locs() %>%
+  locs <- reactive({
+    if(!is.null(input$timelines_date_window)) {
+      locs <- all_locs() %>% 
         mutate(loc_dt = lubridate::parse_date_time(Date,
                                                    "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Latitude, Longitude)
-      if (!is.null(input$longlat_date_window)) {
-        locs <- filter(
-          locs,
-          loc_dt >= input$longlat_date_window[[1]] &
-            loc_dt <= input$longlat_date_window[[2]]
-        )
-      }
+        select(loc_dt, Latitude, Longitude)  
+      filter(loc_dt >= input$timelines_date_window[[1]] &
+               loc_dt <= input$timelines_date_window[[2]])
+    } else {
+      locs <- all_locs() %>% 
+        mutate(loc_dt = lubridate::parse_date_time(Date,
+                                                   "H!:M!:S! d!-m!-Y!")) %>%
+        select(loc_dt, Latitude, Longitude) 
+    }
+  })
+  
+  output$date_range <- renderText({
+    if (!is.null(input$timelines_date_window))
+      paste(
+      strftime(input$timelines_date_window[[1]], "%d %b %Y"),
+      "to",
+      strftime(input$timelines_date_window[[2]], "%d %b %Y")
+      )
+  })
+
+  output$locations <- renderLeaflet({
+    req(locs())
+      locs <- locs()
       coordinates(locs) <- ~ Longitude + Latitude
       proj4string(locs) <- CRS('+proj=longlat +ellps=WGS84')
       leaflet(locs) %>%
@@ -250,30 +294,28 @@ shinyServer(function(input, output, session) {
         )
   })
   
-  output$longlat <- renderDygraph({
-    req(upload_ptt$zipfile)
-    if (!is.null(input$dygraph_date_window)) {
-      strftime(input$dygraph_date_window[[1]], "%d %b %Y")
-    }
-      locs <- read.csv(unz(upload_ptt$zipfile$datapath,
-                           paste0(ptt(), "-Locations.csv"))) %>%
-        mutate(loc_dt = lubridate::parse_date_time(Date,
-                                                   "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Longitude, Latitude)
-      locs <- xts(locs, locs$loc_dt)
-      locs <- locs[, -which(names(locs) %in% c("loc_dt"))]
-      dygraph(locs, main = "Geographic Coordinates",
-              group = 'wc_plots') %>%
-        dyOptions(useDataTimezone = TRUE, drawPoints = TRUE) %>%
-        dySeries("Latitude", axis = "y2") %>%
-        dyAxis("y", label = "long", drawGrid = FALSE) %>%
-        dyAxis("y2", label = "lat", drawGrid = FALSE) %>%
-        dyAxis("x", label = "Time", drawGrid = TRUE) %>%
-        dyLegend(width = 400) %>%
-        dyRangeSelector()
-
-  })
+  # output$longlat <- renderDygraph({
+  #   req(input_dat$zipfile)
+  #   if (!is.null(input$dygraph_date_window)) {
+  #     strftime(input$dygraph_date_window[[1]], "%d %b %Y")
+  #   }
+  #     locs <- read.csv(unz(input_dat$zipfile$datapath,
+  #                          paste0(ptt(), "-Locations.csv"))) %>%
+  #       mutate(loc_dt = lubridate::parse_date_time(Date,
+  #                                                  "H!:M!:S! d!-m!-Y!")) %>%
+  #       select(loc_dt, Longitude, Latitude)
+  #     locs <- xts(locs, locs$loc_dt)
+  #     locs <- locs[, -which(names(locs) %in% c("loc_dt"))]
+  #     dygraph(locs, main = "Geographic Coordinates",
+  #             group = 'wc_plots') %>%
+  #       dyOptions(useDataTimezone = TRUE, drawPoints = TRUE) %>%
+  #       dySeries("Latitude", axis = "y2") %>%
+  #       dyAxis("y", label = "long", drawGrid = FALSE) %>%
+  #       dyAxis("y2", label = "lat", drawGrid = FALSE) %>%
+  #       dyAxis("x", label = "Time", drawGrid = TRUE) %>%
+  #       dyLegend(width = 400) %>%
+  #       dyRangeSelector()
+  # 
+  # })
   
-  outputOptions(output, 'dive_histos_vis', suspendWhenHidden = FALSE)
-  outputOptions(output, 'dive_behav_vis', suspendWhenHidden = FALSE)
 })
