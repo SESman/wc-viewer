@@ -33,8 +33,9 @@ shinyServer(function(input, output, session) {
                           exdir = tempdir())
     input_dat$data_load <- TRUE
   })
-  
+
   observeEvent(input$getWCdata,{
+    input_dat$ptt <- as.character(input$ptt_integer)
     res <- wcUtils::wcPOST(keyfile = input$keyfile$datapath)
     ptt_dat <- wcUtils::wcGetPttID(res,ptt=as.character(input_dat$ptt))
     if(length(ptt_dat$ids) == 1) {
@@ -48,7 +49,8 @@ shinyServer(function(input, output, session) {
       input_dat$id <- NULL
     }
     if(!is.null(input_dat$id)) {
-      input_dat$zipfile <- wcUtils::wcGetZip(id=input_dat$id,keyfile=input$keyfile$datapath)
+      input_dat$zipfile <- wcUtils::wcGetZip(id=input_dat$id,
+                                             keyfile=input$keyfile$datapath)
       input_dat$dat_files <- unzip(input_dat$zipfile,
                                    exdir = tempdir())
       input_dat$data_load <- TRUE
@@ -60,18 +62,12 @@ shinyServer(function(input, output, session) {
   })
   outputOptions(output, "app_mode", suspendWhenHidden = FALSE)
   
-  ptt <- reactive({
-    if(!is.null(input_dat$ptt)){
-      return(input_dat$ptt)
-    } else {
-      return(NULL)
-    }
+  output$current_ptt <- renderText({
+    paste(input_dat$ptt)
   })
   
   dat_files <- reactive({
-    if(!is.null(input_dat$dat_files)) {
     return(input_dat$dat_files)
-    } else return(NULL)
   })
   
   histos <- reactive({
@@ -84,14 +80,16 @@ shinyServer(function(input, output, session) {
   
   all_locs <- reactive({
     req(dat_files())
-    locs_fastgps <- dat_files()[grep(paste0("*",ptt(),"-1-Locations.csv"), 
+    message(paste('examining location data for ptt',input_dat$ptt))
+    locs_fastgps <- dat_files()[grep(paste0("*",input_dat$ptt,"-1-Locations.csv"), 
                                    dat_files())]
-    locs_data <- dat_files()[grep(paste0("*",ptt(),"-Locations.csv"), 
+    locs_data <- dat_files()[grep(paste0("*",input_dat$ptt,"-Locations.csv"), 
                                  dat_files())]
     locs_fastgps <- try(read.csv(locs_fastgps))
     locs_data <- try(read.csv(locs_data))
     
     if (class(locs_fastgps) != "try-error") {
+      message(paste('using fastgps data for ptt',input_dat$ptt))
       return(locs_fastgps)
     } else {
       return(locs_data)
@@ -114,6 +112,10 @@ shinyServer(function(input, output, session) {
   
   output$keyFileInput <- renderUI({
     fileInput('keyfile', 'Upload Key File')
+  })
+  
+  output$pttInput <- renderUI({
+    numericInput('ptt_integer', 'PTT ID Integer',max=999999,min=1111, value=NA)
   })
   
   output$getDataButton <- renderUI({
@@ -256,17 +258,17 @@ shinyServer(function(input, output, session) {
   
   locs <- reactive({
     if(!is.null(input$timelines_date_window)) {
-      locs <- all_locs() %>% 
+      locs <- all_locs() %>%
         mutate(loc_dt = lubridate::parse_date_time(Date,
                                                    "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Latitude, Longitude)  
+        select(loc_dt, Latitude, Longitude) %>% 
       filter(loc_dt >= input$timelines_date_window[[1]] &
                loc_dt <= input$timelines_date_window[[2]])
     } else {
-      locs <- all_locs() %>% 
+      locs <- all_locs() %>%
         mutate(loc_dt = lubridate::parse_date_time(Date,
                                                    "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Latitude, Longitude) 
+        select(loc_dt, Latitude, Longitude)
     }
   })
   
@@ -300,7 +302,7 @@ shinyServer(function(input, output, session) {
   #     strftime(input$dygraph_date_window[[1]], "%d %b %Y")
   #   }
   #     locs <- read.csv(unz(input_dat$zipfile$datapath,
-  #                          paste0(ptt(), "-Locations.csv"))) %>%
+  #                          paste0(input_dat$ptt, "-Locations.csv"))) %>%
   #       mutate(loc_dt = lubridate::parse_date_time(Date,
   #                                                  "H!:M!:S! d!-m!-Y!")) %>%
   #       select(loc_dt, Longitude, Latitude)

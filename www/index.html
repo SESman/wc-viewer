@@ -2,7 +2,7 @@
 <html lang="en">
 
   <head>
-    {{ headContent() }}
+
     <!-- Basic Page Needs
 ================================================== -->
   <meta charset="utf-8">
@@ -129,8 +129,7 @@
               <br />
               <hr>
             <h4>ENTER A PTT ID</h4>
-              <label for="ptt-id">PTT Integer</label>
-              <input id="ptt-id" name="ptt-id" type="number">
+              {{ uiOutput("pttInput") }}
               {{ uiOutput("keyFileInput") }}
               <br />
               {{ uiOutput("getDataButton")}}
@@ -161,7 +160,7 @@
         </section>
       <section id="dive-data-header" data-display-if="output.app_mode === 'show_results'">
         <div class="usa-grid">
-          <h3 class="usa-header">Dive and Timeline Data {{ textOutput("date_range") }}</h3>
+          <h3 class="usa-header">Dive and Timeline Data</h3>
         </div>
         </section>
       <section id="dive-data" data-display-if="output.app_mode === 'show_results'">
