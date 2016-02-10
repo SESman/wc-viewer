@@ -11,11 +11,6 @@ library(viridis)
 library(shinyjs)
 
 shinyServer(function(input, output, session) {
-  # input$file1 will be NULL initially. After the user selects
-  # and uploads a file, it will be a data frame with 'name',
-  # 'size', 'type', and 'datapath' columns. The 'datapath'
-  # column will contain the local filenames where the data can
-  # be found.
   
   input_dat <- reactiveValues(
     dat_files = NULL,
@@ -35,6 +30,14 @@ shinyServer(function(input, output, session) {
   })
 
   observeEvent(input$getWCdata,{
+    with(input_dat,{
+      dat_files = NULL
+      zipfile = NULL
+      ptt = NULL
+      data_load = FALSE
+      select_deployid = FALSE
+      id = NULL
+    })
     input_dat$ptt <- as.character(input$ptt_integer)
     res <- wcUtils::wcPOST(keyfile = input$keyfile$datapath)
     ptt_dat <- wcUtils::wcGetPttID(res,ptt=as.character(input_dat$ptt))
