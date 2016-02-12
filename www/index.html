@@ -175,7 +175,7 @@
       ) }}
       {{ conditionalPanel(
         "output.dive_histos_vis!=0",
-        plotOutput("dive_histos", height = "400px")
+        dygraphOutput("dive_histos", height = "400px")
       ) }}
       {{ dygraphOutput("timelines", height = "250px") }}
           </div>

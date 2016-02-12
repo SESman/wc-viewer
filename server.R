@@ -9,7 +9,6 @@ library(sp)
 library(leaflet)
 library(viridis)
 library(shinyjs)
-library(ggplot2)
 library(gtools)
 
 shinyServer(function(input, output, session) {
@@ -245,7 +244,7 @@ shinyServer(function(input, output, session) {
   })
   outputOptions(output, 'dive_behav_vis', suspendWhenHidden = FALSE)
   
-  output$dive_histos <- renderPlot({
+  output$dive_histos <- renderDygraph({
     validate(need(histos(),"No Histos File Detected"))
     h <- histos()[["histos"]] %>%
       filter(histtype == 'DiveDepth')
@@ -275,14 +274,41 @@ shinyServer(function(input, output, session) {
                             by = paste(t_diff,'hours'))) %>% 
         left_join(h, by = "date")
       
+      h_dat_times <- filter(h,!is.na(bin1)) %>% 
+        mutate(start_dt = date,
+               end_dt = date + lubridate::hours(t_diff)) %>% 
+        select(start_dt,end_dt)
+      
       h <- h %>% select_(.dots = c("date", bin_string)) %>% 
         tidyr::gather(bin,num_dives,num_range("bin",1:nbins)) %>% 
         mutate(bin=factor(bin,levels=gtools::mixedsort(unique(bin))))
       
+      h <- h %>% mutate(num_dives = ifelse(is.na(num_dives),0,num_dives))
+      
       cols <- colorRampPalette(rev(viridis(nbins)))
       
-      p <- ggplot(data = h, aes(x = date, y = num_dives, fill = bin)) +
-        geom_bar(stat="identity") + scale_fill_manual(values=cols(nbins))
+      h <- tidyr::spread(h, key=bin,value=num_dives)
+      h <- xts(h, h$date)
+      h <- h[, -which(names(h) %in% c("date", "datadatetime"))]
+      
+      p <- dygraph(h, main = "Dive Depth Histograms", 
+                   group = 'wc_plots') %>%
+        
+        dyOptions(
+          useDataTimezone = TRUE,
+          strokeWidth = 2,
+          stepPlot = TRUE,
+          fillGraph = FALSE,
+          colors = cols(nbins)
+        ) %>%
+        dyAxis("y", label = "Number of Dives") %>%
+        dyAxis("x", label = "Time")
+      
+      for (i in 1:nrow(h_dat_times)) {
+        p <- p %>% dyShading(from = h_dat_times$start_dt[i], 
+                             to = h_dat_times$end_dt[i])
+      }
+
       return(p)
     }
   })
