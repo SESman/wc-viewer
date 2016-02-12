@@ -285,7 +285,7 @@ shinyServer(function(input, output, session) {
       
       h <- h %>% mutate(num_dives = ifelse(is.na(num_dives),0,num_dives))
       
-      cols <- colorRampPalette(rev(viridis(nbins)))
+      cols <- colorRampPalette(rev(c("#781C81","#413B93","#4065B1","#488BC2","#55A1B1","#63AD99","#7FB972","#B5BD4C","#D9AD3C","#E68E34","#E6642C","#D92120")))
       
       h <- tidyr::spread(h, key=bin,value=num_dives)
       h <- xts(h, h$date)
@@ -298,7 +298,8 @@ shinyServer(function(input, output, session) {
           useDataTimezone = TRUE,
           strokeWidth = 2,
           stepPlot = TRUE,
-          fillGraph = FALSE,
+          fillGraph = TRUE,
+          fillAlpha = 0.05,
           colors = cols(nbins)
         ) %>%
         dyAxis("y", label = "Number of Dives") %>%
