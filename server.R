@@ -9,32 +9,52 @@ library(sp)
 library(leaflet)
 library(viridis)
 library(shinyjs)
+library(ggplot2)
+library(gtools)
 
 shinyServer(function(input, output, session) {
+  useShinyjs(html = TRUE)
+  shinyjs::hide("map")
+  shinyjs::hide("map-data-header")
+  shinyjs::hide("dive-data")
+  shinyjs::hide("dive-data-header")
+  shinyjs::hide("spinner")
   
   input_dat <- reactiveValues(
     dat_files = NULL,
     zipfile = NULL,
     ptt = NULL,
-    data_load = FALSE,
     select_deployid = FALSE,
     id = NULL
   )
   
   observeEvent(input$zipfile, {
+    shinyjs::hide("map")
+    shinyjs::hide("map-data-header")
+    shinyjs::hide("dive-data")
+    shinyjs::hide("dive-data-header")
+    shinyjs::toggle("spinner")
     input_dat$zipfile <- input$zipfile
     input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
     input_dat$dat_files <- unzip(input$zipfile$datapath,
                           exdir = tempdir())
-    input_dat$data_load <- TRUE
+    shinyjs::show("map-data-header")
+    shinyjs::show("map")
+    shinyjs::show("dive-data-header")
+    shinyjs::show("dive-data")
+    shinyjs::toggle("spinner")
   })
 
   observeEvent(input$getWCdata,{
+    shinyjs::toggle("spinner")
+    shinyjs::hide("map")
+    shinyjs::hide("map-data-header")
+    shinyjs::hide("dive-data")
+    shinyjs::hide("dive-data-header")
     with(input_dat,{
       dat_files = NULL
       zipfile = NULL
       ptt = NULL
-      data_load = FALSE
       select_deployid = FALSE
       id = NULL
     })
@@ -45,9 +65,7 @@ shinyServer(function(input, output, session) {
       input_dat$id <- ptt_dat$id
     } else if(nrow(subset(ptt_dat$df,!is.na(deployid))) == 1) {
       input_dat$id <- ptt_dat$df$id[which(!is.na(ptt_dat$df$deployid))]
-      warning('multiple deployments identified; returning only with deployid')
     } else {
-      warning('more than one deployid found for this PTT')
       input_dat$select_deployid <- TRUE
       input_dat$id <- NULL
     }
@@ -56,38 +74,30 @@ shinyServer(function(input, output, session) {
                                              keyfile=input$keyfile$datapath)
       input_dat$dat_files <- unzip(input_dat$zipfile,
                                    exdir = tempdir())
-      input_dat$data_load <- TRUE
     }
-  })
-  
-  output$app_mode <- reactive({
-    ifelse(input_dat$data_load,"show_results","input_only")
-  })
-  outputOptions(output, "app_mode", suspendWhenHidden = FALSE)
-  
-  output$current_ptt <- renderText({
-    paste(input_dat$ptt)
-  })
-  
-  dat_files <- reactive({
-    return(input_dat$dat_files)
+    shinyjs::show("map-data-header",anim=FALSE)
+    shinyjs::show("map",anim=FALSE)
+    shinyjs::show("dive-data-header")
+    shinyjs::show("dive-data")
+    shinyjs::toggle("spinner")
   })
   
   histos <- reactive({
-    req(dat_files())
-    histo_file <- dat_files()[grep("*-Histos.csv", 
-                                            dat_files())]
+    req(input_dat$dat_files)
+    histo_file <- input_dat$dat_files[grep("*-Histos.csv", 
+                                            input_dat$dat_files)]
     res <- wcUtils::read_histos(histo_file)
     return(res)
   })
   
   all_locs <- reactive({
-    req(dat_files())
-    message(paste('examining location data for ptt',input_dat$ptt))
-    locs_fastgps <- dat_files()[grep(paste0("*",input_dat$ptt,"-1-Locations.csv"), 
-                                   dat_files())]
-    locs_data <- dat_files()[grep(paste0("*",input_dat$ptt,"-Locations.csv"), 
-                                 dat_files())]
+    req(input_dat$dat_files)
+    locs_fastgps <- 
+      input_dat$dat_files[grep(paste0("*",input_dat$ptt,"-[0-9]+-Locations.csv"), 
+                                   input_dat$dat_files)]
+    locs_data <- 
+      input_dat$dat_files[grep(paste0("*",input_dat$ptt,"-Locations.csv"), 
+                                 input_dat$dat_files)]
     locs_fastgps <- try(read.csv(locs_fastgps))
     locs_data <- try(read.csv(locs_data))
     
@@ -100,8 +110,8 @@ shinyServer(function(input, output, session) {
   })
   
   behav_file <- reactive({
-    req(dat_files())
-    behav_file <- try(dat_files()[grep("*-Behavior.csv", dat_files())])
+    req(input_dat$dat_files)
+    behav_file <- try(input_dat$dat_files[grep("*-Behavior.csv", input_dat$dat_files)])
     if (class(behav_file) == "try-error") {
       return(NULL)
     } else {
@@ -118,7 +128,8 @@ shinyServer(function(input, output, session) {
   })
   
   output$pttInput <- renderUI({
-    numericInput('ptt_integer', 'PTT ID Integer',max=999999,min=1111, value=NA)
+    numericInput('ptt_integer', 'PTT ID Integer',
+                 max=999999,min=1111, value=NA)
   })
   
   output$getDataButton <- renderUI({
@@ -162,6 +173,10 @@ shinyServer(function(input, output, session) {
   
   output$dives <- renderDygraph({
     validate(need(behav_file(),"No Behavior File Detected"))
+    if (is.null(behav_file())) {
+      return()
+    }
+
       d <- read.csv(behav_file()) %>%
         filter(What != "Message") %>%
         mutate(
@@ -230,33 +245,46 @@ shinyServer(function(input, output, session) {
   })
   outputOptions(output, 'dive_behav_vis', suspendWhenHidden = FALSE)
   
-  output$dive_histos <- renderDygraph({
+  output$dive_histos <- renderPlot({
     validate(need(histos(),"No Histos File Detected"))
-      h <- histos()[["histos"]] %>%
-        filter(histtype == 'DiveDepth')
-      if (nrow(h) < 1) {
-        return(invisible())
+    h <- histos()[["histos"]] %>%
+      filter(histtype == 'DiveDepth')
+    if (nrow(h) < 1) {
+      return(invisible())
+    } else {
+      nbins <- max(h$numbins)
+      bin_string <- paste0("bin1:bin", nbins)
+      
+      non_standard_hours <- 
+        as.numeric(names(table(lubridate::hour(h$date)))[which(
+          table(lubridate::hour(h$date)) < 5)])
+      h <- h %>% filter(!lubridate::hour(date) %in% non_standard_hours)
+      
+      time_bins <- sort(unique(lubridate::hour(h$date)))
+      
+      time_diffs <- diff(time_bins)
+      if(sum(diff(time_diffs)) == 0) {
+        t_diff <- time_diffs[1]
       } else {
-        nbins <- max(h$numbins)
-        bin_string <- paste0("bin1:bin", nbins)
-        
-        h <- h %>% select_(.dots = c("date", bin_string))
-        h <- xts(h, h$date)
-        h <- h[, -which(names(h) %in% c("date", "datadatetime"))]
-        
-        cols <- colorRampPalette(rev(viridis(nbins)))
-        
-        dygraph(h, main = "Dive Depth Histograms", group = 'wc_plots') %>%
-          dyOptions(
-            useDataTimezone = TRUE,
-            stepPlot = TRUE,
-            fillGraph = TRUE,
-            fillAlpha = 0.75,
-            colors = cols(nbins)
-          ) %>%
-          dyAxis("y", label = "Number of Dives") %>%
-          dyAxis("x", label = "Time")
+        stop("dive histo bin time diffs are unequal")
       }
+      
+      h <- data.frame(date =
+                        seq(min(h$date),
+                            max(h$date), 
+                            by = paste(t_diff,'hours'))) %>% 
+        left_join(h, by = "date")
+      
+      h <- h %>% select_(.dots = c("date", bin_string)) %>% 
+        tidyr::gather(bin,num_dives,num_range("bin",1:nbins)) %>% 
+        mutate(bin=factor(bin,levels=gtools::mixedsort(unique(bin))))
+      
+      cols <- colorRampPalette(rev(viridis(nbins)))
+      
+      p <- ggplot(data = h, aes(x = date, y = num_dives, fill = bin)) +
+        geom_bar(stat="identity") + scale_fill_manual(values=cols(nbins))
+      return(p)
+    }
   })
   
   locs <- reactive({

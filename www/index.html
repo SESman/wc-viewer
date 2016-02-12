@@ -2,7 +2,7 @@
 <html lang="en">
 
   <head>
-
+  <script src="shinyjs/inject.js"></script>
     <!-- Basic Page Needs
 ================================================== -->
   <meta charset="utf-8">
@@ -133,10 +133,13 @@
               {{ uiOutput("keyFileInput") }}
               <br />
               {{ uiOutput("getDataButton")}}
+              <div id="spinner" style="padding-left: 125px">
+                <img src="spinner.gif">
+              </div>
         </div>
         <div class="usa-width-one-half">
           <h4 class="usa-heading-alt">Purpose</h4>
-          <p>This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers are supported.</p>
+          <p>This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers is supported.</p>
           <p>There are two methods for providing data:</p>
           <h6 class="usa-heading-alt">WC Data Portal Zip File</h6>
           <p>Upload a *.zip file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.</p>
@@ -146,33 +149,33 @@
         </div>
         </section>
         
-        <section id="map-data-header" data-display-if="output.app_mode === 'show_results'">
+        <section id="map-data-header">
           <div class="usa-grid">
           <h3 class="usa-header">Argos and Fastloc Locations</h3>
           </div>
         </section>
-       <section id="map" data-display-if="output.app_mode === 'show_results'">
+       <section id="map">
         <div class="usa-grid">
           <div class="usa-width-one-whole" id="map">
             {{ leafletOutput("locations") }}
           </div>
         </div>
         </section>
-      <section id="dive-data-header" data-display-if="output.app_mode === 'show_results'">
+      <section id="dive-data-header">
         <div class="usa-grid">
           <h3 class="usa-header">Dive and Timeline Data</h3>
         </div>
         </section>
-      <section id="dive-data" data-display-if="output.app_mode === 'show_results'">
+      <section id="dive-data">
         <div class="usa-grid">
           <div class="usa-width-one-whole">
             {{ conditionalPanel(
         "output.dive_behav_vis!=0",
-        dygraphOutput("dives", height = "300px")
+        dygraphOutput("dives", height = "400px")
       ) }}
       {{ conditionalPanel(
         "output.dive_histos_vis!=0",
-        dygraphOutput("dive_histos", height = "300px")
+        plotOutput("dive_histos", height = "400px")
       ) }}
       {{ dygraphOutput("timelines", height = "250px") }}
           </div>
