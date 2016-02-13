@@ -37,6 +37,7 @@ shinyServer(function(input, output, session) {
     input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
     input_dat$dat_files <- unzip(input$zipfile$datapath,
                           exdir = tempdir())
+    updateNumericInput(session,inputId="ptt_integer",value=input_dat$ptt)
     shinyjs::show("map-data-header")
     shinyjs::show("map")
     shinyjs::show("dive-data-header")
@@ -89,6 +90,29 @@ shinyServer(function(input, output, session) {
     return(res)
   })
   
+  msgs_hourly <- reactive({
+    req(input_dat$dat_files)
+    msg_file <- input_dat$dat_files[grep("*-All.csv",
+                                          input_dat$dat_files)]
+    msg_dt <- readr::read_csv(msg_file) %>% 
+      dplyr::select(msg_date = matches('Msg Date')) %>% 
+      dplyr::mutate(msg_date = lubridate::parse_date_time(
+        msg_date,orders="mdY HMS"),
+        msg_hour = lubridate::floor_date(msg_date,"hour")) %>% 
+      dplyr::group_by(msg_hour) %>% 
+      dplyr::summarise(msg_count=n())
+    
+    msg_seq <- data.frame(msg_hour = 
+                            seq(min(msg_dt$msg_hour),
+                                max(msg_dt$msg_hour),
+                                by='1 hour'))
+    
+    msg_dt <- msg_seq %>% dplyr::left_join(msg_dt, by='msg_hour') %>% 
+      dplyr::mutate(msg_count = ifelse(is.na(msg_count),0,msg_count)) %>% 
+      dplyr::arrange(msg_hour)
+    return(msg_dt)
+  })
+  
   all_locs <- reactive({
     req(input_dat$dat_files)
     locs_fastgps <- 
@@ -135,13 +159,38 @@ shinyServer(function(input, output, session) {
     actionButton('getWCdata',label="Get Data from Wildlife Computers")
   })
   
+  output$msgs_per_hour <- renderDygraph({
+    m <- xts(msgs_hourly(),msgs_hourly()$msg_hour)
+    m <- m[,"msg_count"]
+    m$msg_count <- as.integer(m$msg_count)
+    
+    dygraph(m, main = "Argos Messages Received", group = 'wc_plots') %>%
+      dySeries(
+        "msg_count",
+        label = "Message Count",
+        fillGraph = TRUE,
+        stepPlot = TRUE,
+        color = "#11AA99",
+        drawPoints = FALSE,
+        strokeWidth = 0
+      ) %>%
+      dyOptions(useDataTimezone = TRUE,
+                fillAlpha = 0.75) %>%
+      dyAxis("y", label = "Messages per Hour") %>%
+      dyAxis("x", label = "Time") %>% 
+      dyRangeSelector()
+  })
+  
   output$timelines <- renderDygraph({
     validate(need(histos(), "No Histos File Detected"))
 
-      t <- histos() %>%
+      t <- try(histos() %>%
         wcUtils::tidyTimelines(.) %>%
         select(datadatetime, percent_dry) %>%
-        arrange(datadatetime)
+        arrange(datadatetime))
+      if(class(t) == 'try-error') {
+        return(NULL)
+      }
       
       t <- data.frame(datadatetime =
                         seq(min(t$datadatetime),
@@ -158,7 +207,7 @@ shinyServer(function(input, output, session) {
           label = "Percent Dry",
           fillGraph = TRUE,
           stepPlot = TRUE,
-          color = "#D55E00",
+          color = "#999933",
           drawPoints = FALSE,
           strokeWidth = 0
         ) %>%
@@ -166,8 +215,7 @@ shinyServer(function(input, output, session) {
                   fillAlpha = 0.75) %>%
         dyAxis("y", label = "Percent Dry per Hour",
                valueRange = c(0, 101)) %>%
-        dyAxis("x", label = "Time") %>%
-        dyRangeSelector()
+        dyAxis("x", label = "Time")
   })
   
   output$dives <- renderDygraph({
@@ -196,7 +244,7 @@ shinyServer(function(input, output, session) {
           label = "Depth",
           fillGraph = TRUE,
           stepPlot = TRUE,
-          color = "#0071BC",
+          color = "#992288",
           drawPoints = FALSE,
           strokeWidth = 0
         ) %>%
@@ -233,6 +281,17 @@ shinyServer(function(input, output, session) {
       }
   })
   outputOptions(output, 'dive_histos_vis', suspendWhenHidden = FALSE)
+  
+  output$timelines_vis <- reactive({
+    h <- histos()[["histos"]] %>%
+      filter(histtype == 'Percent' | histtype == 'TwentyMinTimeline')
+    if (nrow(h) < 1) {
+      return(0)
+    } else {
+      return(1)
+    }
+  })
+  outputOptions(output, 'timelines_vis', suspendWhenHidden = FALSE)
   
   output$dive_behav_vis <- reactive({
     t <- try(read.csv(behav_file()))
@@ -315,43 +374,48 @@ shinyServer(function(input, output, session) {
   })
   
   locs <- reactive({
-    if(!is.null(input$timelines_date_window)) {
+    if(!is.null(input$msgs_per_hour_date_window)) {
       locs <- all_locs() %>%
         mutate(loc_dt = lubridate::parse_date_time(Date,
-                                                   "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Latitude, Longitude) %>% 
-      filter(loc_dt >= input$timelines_date_window[[1]] &
-               loc_dt <= input$timelines_date_window[[2]])
+                                                   "H!:M!:S! d!-m!-Y!"),
+               Type = as.factor(Type)) %>%
+        select(loc_dt, Latitude, Longitude, Type) %>% 
+      filter(loc_dt >= input$msgs_per_hour_date_window[[1]] &
+               loc_dt <= input$msgs_per_hour_date_window[[2]])
     } else {
       locs <- all_locs() %>%
         mutate(loc_dt = lubridate::parse_date_time(Date,
-                                                   "H!:M!:S! d!-m!-Y!")) %>%
-        select(loc_dt, Latitude, Longitude)
+                                                   "H!:M!:S! d!-m!-Y!"),
+               Type = as.factor(Type)) %>%
+        select(loc_dt, Latitude, Longitude, Type)
     }
   })
   
-  output$date_range <- renderText({
-    if (!is.null(input$timelines_date_window))
-      paste(
-      strftime(input$timelines_date_window[[1]], "%d %b %Y"),
-      "to",
-      strftime(input$timelines_date_window[[2]], "%d %b %Y")
-      )
-  })
-
   output$locations <- renderLeaflet({
+    esri_wrld_ocean <- "http://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}"
+    esri_wrld_ocean_ref <- "http://services.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}"
+    esri_wrld_ocean_attr <- "Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri"
+    
     req(locs())
+      pal <- colorFactor(c("#F19320","#762A83","#EE3333"), domain = c("Argos", "GPS","User"))
       locs <- locs()
       coordinates(locs) <- ~ Longitude + Latitude
       proj4string(locs) <- CRS('+proj=longlat +ellps=WGS84')
       leaflet(locs) %>%
-        addProviderTiles("Esri.OceanBasemap") %>%
+        addTiles(urlTemplate = esri_wrld_ocean,
+                         attribution = esri_wrld_ocean_attr,
+                 group = "Ocean Basemap"
+                         ) %>%
+        addTiles(urlTemplate = esri_wrld_ocean_ref,
+                 attribution = esri_wrld_ocean_attr,
+                 group = "Ocean Placenames") %>% 
         addCircleMarkers(
-          radius = 2,
+          radius = 3,
           stroke = FALSE,
-          color = "#e31c3d",
-          fillOpacity = 0.5
-        )
+          color = ~pal(Type),
+          fillOpacity = 1
+        ) %>% 
+        addLegend(pal=pal,values=~Type,title = "Location Type",opacity=1)
   })
   
   # output$longlat <- renderDygraph({

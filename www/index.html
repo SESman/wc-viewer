@@ -158,6 +158,8 @@
         <div class="usa-grid">
           <div class="usa-width-one-whole" id="map">
             {{ leafletOutput("locations") }}
+            <br />
+            {{ dygraphOutput("msgs_per_hour",height = "200px") }}
           </div>
         </div>
         </section>
@@ -177,7 +179,10 @@
         "output.dive_histos_vis!=0",
         dygraphOutput("dive_histos", height = "400px")
       ) }}
-      {{ dygraphOutput("timelines", height = "250px") }}
+      {{ conditionalPanel(
+        "output.timelines_vis!=0",
+        dygraphOutput("timelines", height = "250px")
+        ) }}
           </div>
         </div>
       </section>
