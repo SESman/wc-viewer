@@ -389,6 +389,15 @@ shinyServer(function(input, output, session) {
                Type = as.factor(Type)) %>%
         select(loc_dt, Latitude, Longitude, Type)
     }
+
+    coordinates(locs) <- ~ Longitude + Latitude
+    proj4string(locs) <- CRS('+proj=longlat +ellps=WGS84')
+    return(locs)
+  })
+  
+  track <- reactive({
+    req(locs())
+    SpatialLines(list(Lines(list(Line(locs())), "id")))
   })
   
   output$locations <- renderLeaflet({
@@ -398,24 +407,24 @@ shinyServer(function(input, output, session) {
     
     req(locs())
       pal <- colorFactor(c("#F19320","#762A83","#EE3333"), domain = c("Argos", "GPS","User"))
-      locs <- locs()
-      coordinates(locs) <- ~ Longitude + Latitude
-      proj4string(locs) <- CRS('+proj=longlat +ellps=WGS84')
-      leaflet(locs) %>%
+
+      leaflet(locs()) %>%
         addTiles(urlTemplate = esri_wrld_ocean,
-                         attribution = esri_wrld_ocean_attr,
-                 group = "Ocean Basemap"
+                         attribution = esri_wrld_ocean_attr
                          ) %>%
         addTiles(urlTemplate = esri_wrld_ocean_ref,
-                 attribution = esri_wrld_ocean_attr,
-                 group = "Ocean Placenames") %>% 
+                 attribution = esri_wrld_ocean_attr) %>% 
+        addPolylines(data=track(), weight=2, color='black',
+                     group="Trackline") %>% 
         addCircleMarkers(
           radius = 3,
           stroke = FALSE,
           color = ~pal(Type),
           fillOpacity = 1
         ) %>% 
-        addLegend(pal=pal,values=~Type,title = "Location Type",opacity=1)
+        addLegend(pal=pal,
+                  values=~Type,
+                  title = "Location Type",opacity=1)
   })
   
   # output$longlat <- renderDygraph({
