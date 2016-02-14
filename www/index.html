@@ -61,7 +61,66 @@
     text-align: center;
     color: white;
   }
-  @media screen {
+  .usa-site-navbar {
+    padding-top: 1rem; }
+  .usa-site-navbar .usa-grid {
+    position: relative; }
+  .usa-site-navbar .usa-grid::before,
+  .usa-site-navbar .usa-grid::after {
+    content: '';
+    display: table; }
+  .usa-nav-list a {
+    border-bottom: 0;
+    text-decoration: none; }
+  .usa-nav-list {
+    float: right;
+    margin-top: -0.5em;
+    position: absolute;
+    right: 3rem;
+    top: 50%; }
+    .usa-menu-item a {
+      color: #fff;
+    }
+  @media (max-width: 900px) {
+    .usa-nav-list {
+      float: none;
+      margin: 0 auto;
+      margin-bottom: 1em;
+      position: relative;
+      text-align: center;
+      width: 70%; } }
+    li.usa-menu-item {
+      display: inline;
+      font-size: 18px; }
+  @media (max-width: 970px) {
+    li.usa-menu-item {
+      font-size: 14px; } }
+
+  .usa-menu-item a {
+      padding: 1em; }
+
+  .usa-menu-item:hover a {
+      background-color: #126ca7;
+      color: #fff; }
+  li.usa-menu-item:last-child {
+      margin-right: 0; }
+@media (max-width: 600px) {
+  .usa-site-navbar .usa-grid {
+    padding: 0; }
+
+  .usa-nav-list {
+    margin: 1em 0; }
+
+  ul.usa-nav-list {
+    bottom: 0;
+    position: relative;
+    right: 0;
+    width: 100%; }
+
+  .usa-menu-item a {
+    padding: .4em; } }
+    
+@media screen {
     header {
       display: block;
     }
@@ -110,6 +169,21 @@
   <body>
 
     <header role="banner">
+    <nav class="usa-site-navbar">
+    <div class="usa-grid">
+      <ul class="usa-nav-list usa-unstyled-list">
+          <li class="usa-menu-item">
+            <a href="about.html" target="_blank">About</a>
+          </li>
+          <li class="usa-menu-item">
+            <a href="help.html" target="_blank">Help</a>
+          </li>
+          <li class="usa-menu-item">
+            <a href="issues.html" target="_blank">Bugs & Issues</a>
+          </li>
+      </ul>
+    </div>
+    </nav>
       <h3 class="usa-display">Marine Wildlife Telemetry Explorer</h3>
       <p class="usa-font-lead">A collaboration between NOAA Fisheries and Wildlife Computers<br />for the exploration of telemetry data from marine wildlife</p>
     </header>
@@ -138,12 +212,12 @@
               </div>
         </div>
         <div class="usa-width-one-half">
-          <h4 class="usa-heading-alt">Purpose</h4>
+          <h2 class="usa-heading-alt">Getting Started</h2>
           <p>This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers is supported.</p>
-          <p>There are two methods for providing data:</p>
-          <h6 class="usa-heading-alt">WC Data Portal Zip File</h6>
+          <h3>Providing Data</h3>
+          <h4>WC Data Portal Zip File</h4>
           <p>Upload a *.zip file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.</p>
-          <h6 class="usa-heading-alt">Get Data via Web Services</h6>
+          <h4>Get Data via Web Services</h4>
           <p>If you have enabled web services on your Wildlife Computers Data Portal account, you can provide a PTT identifier and a web key file. The application will pull data directly from the portal.</p>
         </div>
         </div>
