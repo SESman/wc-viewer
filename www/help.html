@@ -52,27 +52,6 @@
   <link rel="stylesheet" href="assets/css/google-fonts.css">
   <link rel="stylesheet" href="assets/css/main.css">
     <style type="text/css">
-  header {
-    display: none;
-    background-color: #112e51;
-    background-size: cover;
-    background-position: center;
-    text-align: center;
-    color: white;
-  }
-  @media screen {
-    header {
-      display: block;
-    }
-  }
-  header h3 {
-    padding: 60px 10px 10px 10px;
-    margin: 0;
-  }
-  header p {
-    margin: 0;
-    padding: 0 10px 40px 10px;
-  }
   footer p {
     font-size: 14px;
   }
@@ -80,14 +59,18 @@
   </head>
 
   <body>
+    <header class="usa-site-header" role="banner">
 
-    <header role="banner">
-      <h3 class="usa-display">Marine Wildlife Telemetry Explorer</h3>
-      <p class="usa-font-lead">A collaboration between NOAA Fisheries and Wildlife Computers<br />for the exploration of telemetry data from marine wildlife</p>
-    </header>
+  <div class="usa-disclaimer">
+    <span class="usa-disclaimer-official">
+      <br />
+    </span>
+  </div>
+  </header>
     
 <div class="usa-grid">
     <aside class="usa-width-one-third">
+      <h4>Marine Wildlife Telemetry Explorer</h4>
       <ul class="usa-sidenav-list">
         <li>
           <a href="about.html">About</a>
@@ -107,9 +90,9 @@
         <p class="usa-font-lead">This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers is supported.</p>
         <h3>Getting Started</h3>
           <p>There are two methods for providing data:</p>
-          <h3>WC Data Portal Zip File</h3>
+          <h4>WC Data Portal Zip File</h4>
           <p>Upload a *.zip file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.</p>
-          <h3>Get Data via Web Services</h3>
+          <h4>Get Data via Web Services</h4>
           <p>If you have enabled web services on your Wildlife Computers Data Portal account, you can provide a PTT identifier and a web key file. The application will pull data directly from the portal.</p>
             </div>
 <div class="usa-alert usa-alert-warning">
