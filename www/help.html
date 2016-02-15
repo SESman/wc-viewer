@@ -69,11 +69,21 @@
         <h2>Help and Instructions</h2>
         <p class="usa-font-lead">This application was developed to provide scientists a simple interface for exploring telemetry data from tags deployed on marine wildlife. At this time, only a subset of tag/data types from Wildlife Computers is supported.</p>
         <h3>Getting Started</h3>
+          <h4>Wildlife Computers Data Portal</h4>
+          <p>All data uploaded to the application must have been processed on the Wildlife Computers Data Portal. For best results, any deployments loaded should have been properly setup with correct start/end times and any settings files uploaded to the portal.</p>
           <p>There are two methods for providing data:</p>
           <h4>WC Data Portal Zip File</h4>
-          <p>Upload a *.zip file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.</p>
+          <p>Upload a <em>*.zip</em> file downloaded from the Wildlife Computers Data Portal. Only one deployment/file can be explored at a time.The name of the <em>*.zip</em> file should include only the PTT integer (e.g. 12345.zip).</p>
           <h4>Get Data via Web Services</h4>
           <p>If you have enabled web services on your Wildlife Computers Data Portal account, you can provide a PTT identifier and a web key file. The application will pull data directly from the portal.</p>
+          <h4>GPS/Fastloc Tags</h4>
+          <p>Fastloc tags with GPS location data are supported. However, the automatic location processing should be turned on in the Wildlife Computers Data Portal for the deployment. This will create a special <em>Locations.csv</em> file that includes both Argos locations and GPS locations determined from the default Fastloc process.</p>
+          <h3>Exploring the Data</h3>
+          <p>The application will process and display both location and any behavior data recieved.</p>
+          <h4>Interacting with the Map</h4>
+          <p>The map will initially display all locations. The map can be zoomed by either using the '+' and '-' icons or the mouse wheel (or equivalent trackpad action). The icons will zoom the map based on the current center point. The mouse wheel will zoom dependent on the current cursor location. Double clicking the map map will zoom in one step at that location. Zooming the map has no filtering impact on the display of other data (e.g. zooming into a subset of locations does not subset the dive behavior data shown).</p>
+          <h4>Interacting with Behavior Data</h4>
+          <p>All of the behavior and other data from the deployment are displayed as interactive timeseries graphs. Dragging the mouse will create a brush to zoom in on a region of time. The time series of Argos messages has an additional range selector that can be used to refine the date window of interest. All of the time series data and the map data are synced. Changes in any of the time series windows will sync with all the other windows and also subset the map data. Double click on any of the behavior data graphs to return to the full view.</p>
             </div>
 <div class="usa-alert usa-alert-warning">
     <div class="usa-alert-body">
