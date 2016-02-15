@@ -195,15 +195,33 @@ shinyServer(function(input, output, session) {
         return(NULL)
       }
       
+      t_days <- unique(lubridate::floor_date(t$datadatetime,"day"))
+      day_two <- t_days[which.min(t_days)] + lubridate::days(1)
+      day_two_bins <- filter(t, floor_date(datadatetime,"day") == day_two)
+      
+      time_diffs <- diff(day_two_bins$datadatetime)
+      if(sum(diff(as.numeric(time_diffs))) == 0) {
+        t_diff <- as.numeric(time_diffs[1])
+        if(t_diff == 1) {
+          t_diff <- 60
+        } else if(t_diff == 20 ) {
+          t_diff <- t_diff
+        } else {
+          stop("timeline bin other than 20 or 60 min bins detected")
+        }
+      } else {
+        stop("timeline time diffs are unequal")
+      }
+      
       t <- data.frame(datadatetime =
                         seq(min(t$datadatetime),
                             max(t$datadatetime), 
-                            by = '1 hour')) %>% 
+                            by = paste(t_diff,'min'))) %>% 
         left_join(t, by = "datadatetime")
       
       t_dat_times <- filter(t,!is.na(percent_dry)) %>% 
         mutate(start_dt = datadatetime,
-               end_dt = datadatetime + lubridate::hours(1)) %>% 
+               end_dt = datadatetime + lubridate::minutes(t_diff)) %>% 
         select(start_dt,end_dt)
       
       t <- xts(t, t$datadatetime)
@@ -221,7 +239,7 @@ shinyServer(function(input, output, session) {
         ) %>%
         dyOptions(useDataTimezone = TRUE,
                   fillAlpha = 0.75) %>%
-        dyAxis("y", label = "Percent Dry per Hour",
+        dyAxis("y", label = paste("Percent Dry per",t_diff,"min."),
                valueRange = c(0, 101)) %>%
         dyAxis("x", label = "Time") %>% 
         dyRangeSelector()
