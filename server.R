@@ -391,7 +391,9 @@ shinyServer(function(input, output, session) {
     }
 
     coordinates(locs) <- ~ Longitude + Latitude
-    proj4string(locs) <- CRS('+proj=longlat +ellps=WGS84')
+    proj4string(locs) <- CRS("+init=epsg:4326")
+    #reproject to get proper wrapping
+    locs <- sp::spTransform(locs,CRS("+proj=longlat +lon_wrap=180"))
     return(locs)
   })
   
@@ -415,7 +417,7 @@ shinyServer(function(input, output, session) {
         addTiles(urlTemplate = esri_wrld_ocean_ref,
                  attribution = esri_wrld_ocean_attr) %>% 
         addPolylines(data=track(), weight=2, color='black',
-                     group="Trackline") %>% 
+                     group="Trackline") %>%
         addCircleMarkers(
           radius = 3,
           stroke = FALSE,
