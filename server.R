@@ -19,6 +19,7 @@ shinyServer(function(input, output, session) {
   shinyjs::hide("dive-data")
   shinyjs::hide("dive-data-header")
   shinyjs::hide("spinner")
+  shinyjs::hide("time-mismatch-warning")
   
   input_dat <- reactiveValues(
     dat_files = NULL,
@@ -105,7 +106,7 @@ shinyServer(function(input, output, session) {
     
     msg_seq <- data.frame(msg_hour = 
                             seq(min(msg_dt$msg_hour),
-                                max(msg_dt$msg_hour),
+                                max(msg_dt$msg_hour + lubridate::hours(1)),
                                 by='1 hour'))
     
     msg_dt <- msg_seq %>% dplyr::left_join(msg_dt, by='msg_hour') %>% 
@@ -132,6 +133,7 @@ shinyServer(function(input, output, session) {
       return(locs_data)
     }
   })
+
   
   behav_file <- reactive({
     req(input_dat$dat_files)
@@ -199,10 +201,15 @@ shinyServer(function(input, output, session) {
                             by = '1 hour')) %>% 
         left_join(t, by = "datadatetime")
       
+      t_dat_times <- filter(t,!is.na(percent_dry)) %>% 
+        mutate(start_dt = datadatetime,
+               end_dt = datadatetime + lubridate::hours(1)) %>% 
+        select(start_dt,end_dt)
+      
       t <- xts(t, t$datadatetime)
       t <- t[, "percent_dry"]
       
-      dygraph(t, main = "Percent Dry", group = 'wc_plots') %>%
+      p <- dygraph(t, main = "Percent Dry", group = 'wc_plots') %>%
         dySeries(
           "percent_dry",
           label = "Percent Dry",
@@ -216,7 +223,14 @@ shinyServer(function(input, output, session) {
                   fillAlpha = 0.75) %>%
         dyAxis("y", label = "Percent Dry per Hour",
                valueRange = c(0, 101)) %>%
-        dyAxis("x", label = "Time")
+        dyAxis("x", label = "Time") %>% 
+        dyRangeSelector()
+      
+      for (i in 1:nrow(t_dat_times)) {
+        p <- p %>% dyShading(from = t_dat_times$start_dt[i], 
+                             to = t_dat_times$end_dt[i])
+      }
+      return(p)
   })
   
   output$dives <- renderDygraph({
@@ -252,7 +266,8 @@ shinyServer(function(input, output, session) {
         dyOptions(useDataTimezone = TRUE,
                   fillAlpha = 0.75) %>%
         dyAxis("y", label = "Dive Depth (m)") %>%
-        dyAxis("x", label = "Time")
+        dyAxis("x", label = "Time") %>% 
+        dyRangeSelector()
       
       msg <- read.csv(behav_file()) %>%
         filter(What == "Message") %>%
@@ -330,7 +345,7 @@ shinyServer(function(input, output, session) {
       
       h <- data.frame(date =
                         seq(min(h$date),
-                            max(h$date), 
+                            max(h$date + lubridate::hours(t_diff)), 
                             by = paste(t_diff,'hours'))) %>% 
         left_join(h, by = "date")
       
@@ -363,7 +378,8 @@ shinyServer(function(input, output, session) {
           colors = cols(nbins)
         ) %>%
         dyAxis("y", label = "Number of Dives") %>%
-        dyAxis("x", label = "Time")
+        dyAxis("x", label = "Time") %>% 
+        dyRangeSelector()
       
       for (i in 1:nrow(h_dat_times)) {
         p <- p %>% dyShading(from = h_dat_times$start_dt[i], 
