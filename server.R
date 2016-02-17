@@ -39,12 +39,24 @@ shinyServer(function(input, output, session) {
     input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
     input_dat$dat_files <- unzip(input$zipfile$datapath,
                           exdir = tempdir())
+    
     updateNumericInput(session,inputId="ptt_integer",value=input_dat$ptt)
     shinyjs::show("map-data-header")
     shinyjs::show("map")
     shinyjs::show("dive-data-header")
     shinyjs::show("dive-data")
     shinyjs::toggle("spinner")
+  })
+  
+  observeEvent(input$loadNFSdemo, {
+    shinyjs::hide("map")
+    shinyjs::hide("map-data-header")
+    shinyjs::hide("dive-data")
+    shinyjs::hide("dive-data-header")
+    shinyjs::toggle("spinner")
+    input_dat$zipfile <- 'inst/nfs_demo.zip'
+    input_dat$ptt <- 8308
+    input_dat$dat_files <- unzip('inst/nfs_demo.zip',exdir = tempdir())
   })
 
   observeEvent(input$getWCdata,{
@@ -65,7 +77,7 @@ shinyServer(function(input, output, session) {
     ptt_dat <- wcUtils::wcGetPttID(res,ptt=as.character(input_dat$ptt))
     if(length(ptt_dat$ids) == 1) {
       input_dat$id <- ptt_dat$id
-    } else if(nrow(subset(ptt_dat$df,!is.na(deployid))) == 1) {
+    } else if(nrow(subset(ptt_dat$df,!is.na(deployid) & deployid != "")) == 1) {
       input_dat$id <- ptt_dat$df$id[which(!is.na(ptt_dat$df$deployid))]
     } else {
       input_dat$select_deployid <- TRUE
@@ -196,7 +208,7 @@ shinyServer(function(input, output, session) {
       }
       
       t_days <- unique(lubridate::floor_date(t$datadatetime,"day"))
-      day_two <- t_days[which.min(t_days)] + lubridate::days(1)
+      day_two <- t_days[which.min(t_days) + 1]
       day_two_bins <- filter(t, floor_date(datadatetime,"day") == day_two)
       
       time_diffs <- diff(day_two_bins$datadatetime)
