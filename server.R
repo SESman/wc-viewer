@@ -78,7 +78,7 @@ shinyServer(function(input, output, session) {
     if(length(ptt_dat$ids) == 1) {
       input_dat$id <- ptt_dat$id
     } else if(nrow(subset(ptt_dat$df,!is.na(deployid) & deployid != "")) == 1) {
-      input_dat$id <- ptt_dat$df$id[which(!is.na(ptt_dat$df$deployid))]
+      input_dat$id <- ptt_dat$df$id[which(!is.na(ptt_dat$df$deployid) & ptt_dat$df$deployid != "")]
     } else {
       input_dat$select_deployid <- TRUE
       input_dat$id <- NULL
@@ -253,7 +253,7 @@ shinyServer(function(input, output, session) {
                   fillAlpha = 0.75) %>%
         dyAxis("y", label = paste("Percent Dry per",t_diff,"min."),
                valueRange = c(0, 101)) %>%
-        dyAxis("x", label = "Time") %>% 
+        dyAxis("x", label = "Time")%>% 
         dyRangeSelector()
       
       for (i in 1:nrow(t_dat_times)) {
@@ -330,7 +330,7 @@ shinyServer(function(input, output, session) {
   
   output$timelines_vis <- reactive({
     h <- histos()[["histos"]] %>%
-      filter(histtype == 'Percent' | histtype == 'TwentyMinTimeline')
+      filter(histtype %in% c('Percent','1Percent','TwentyMinTimeline'))
     if (nrow(h) < 1) {
       return(0)
     } else {
@@ -444,6 +444,16 @@ shinyServer(function(input, output, session) {
     return(locs)
   })
   
+  locs_start <- reactive({
+    l_start <- subset(locs(),loc_dt == min(locs()$loc_dt))
+    return(l_start)
+  })
+  
+  locs_end <- reactive({
+    l_end <- subset(locs(),loc_dt == max(locs()$loc_dt))
+    return(l_end)
+  })
+  
   track <- reactive({
     req(locs())
     SpatialLines(list(Lines(list(Line(locs())), "id")))
@@ -471,6 +481,22 @@ shinyServer(function(input, output, session) {
           color = ~pal(Type),
           fillOpacity = 1
         ) %>% 
+        addCircleMarkers(
+          data=locs_start(),
+          radius=5,
+          stroke=TRUE,
+          color='#117733',
+          fill=FALSE,
+          opacity=1,
+          popup=~loc_dt) %>%
+        addCircleMarkers(
+          data=locs_end(),
+          radius=5,
+          stroke=TRUE,
+          color='#882255',
+          fill=FALSE,
+          opacity=1,
+          popup=~loc_dt) %>%
         addLegend(pal=pal,
                   values=~Type,
                   title = "Location Type",opacity=1)
