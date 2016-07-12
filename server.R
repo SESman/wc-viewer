@@ -14,12 +14,12 @@ library(gtools)
 
 shinyServer(function(input, output, session) {
   useShinyjs(html = TRUE)
-  shinyjs::hide("map")
-  shinyjs::hide("map-data-header")
-  shinyjs::hide("dive-data")
-  shinyjs::hide("dive-data-header")
-  shinyjs::hide("spinner")
-  shinyjs::hide("time-mismatch-warning")
+  shinyjs::hide("map",anim=FALSE)
+  shinyjs::hide("map-data-header", anim = FALSE)
+  shinyjs::hide("dive-data",anim = FALSE)
+  shinyjs::hide("dive-data-header",anim = FALSE)
+  shinyjs::hide("spinner",anim = FALSE)
+  shinyjs::hide("time-mismatch-warning",anim = FALSE)
   
   input_dat <- reactiveValues(
     dat_files = NULL,
@@ -30,41 +30,30 @@ shinyServer(function(input, output, session) {
   )
   
   observeEvent(input$zipfile, {
-    shinyjs::hide("map")
-    shinyjs::hide("map-data-header")
-    shinyjs::hide("dive-data")
-    shinyjs::hide("dive-data-header")
-    shinyjs::toggle("spinner")
+    shinyjs::hide("map",anim = FALSE)
+    shinyjs::hide("map-data-header",anim = FALSE)
+    shinyjs::hide("dive-data",anim = FALSE)
+    shinyjs::hide("dive-data-header",anim = FALSE)
+    shinyjs::toggle("spinner",anim = FALSE)
     input_dat$zipfile <- input$zipfile
     input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
     input_dat$dat_files <- unzip(input$zipfile$datapath,
                           exdir = tempdir())
     
     updateNumericInput(session,inputId="ptt_integer",value=input_dat$ptt)
-    shinyjs::show("map-data-header")
-    shinyjs::show("map")
-    shinyjs::show("dive-data-header")
-    shinyjs::show("dive-data")
-    shinyjs::toggle("spinner")
-  })
-  
-  observeEvent(input$loadNFSdemo, {
-    shinyjs::hide("map")
-    shinyjs::hide("map-data-header")
-    shinyjs::hide("dive-data")
-    shinyjs::hide("dive-data-header")
-    shinyjs::toggle("spinner")
-    input_dat$zipfile <- 'inst/nfs_demo.zip'
-    input_dat$ptt <- 8308
-    input_dat$dat_files <- unzip('inst/nfs_demo.zip',exdir = tempdir())
+    shinyjs::show("map-data-header",anim = FALSE)
+    shinyjs::show("map",anim = FALSE)
+    shinyjs::show("dive-data-header",anim = FALSE)
+    shinyjs::show("dive-data",anim = FALSE)
+    shinyjs::toggle("spinner",anim = FALSE)
   })
 
   observeEvent(input$getWCdata,{
-    shinyjs::toggle("spinner")
-    shinyjs::hide("map")
-    shinyjs::hide("map-data-header")
-    shinyjs::hide("dive-data")
-    shinyjs::hide("dive-data-header")
+    shinyjs::toggle("spinner",anim = FALSE)
+    shinyjs::hide("map",anim = FALSE)
+    shinyjs::hide("map-data-header",anim = FALSE)
+    shinyjs::hide("dive-data",anim = FALSE)
+    shinyjs::hide("dive-data-header",anim = FALSE)
     with(input_dat,{
       dat_files = NULL
       zipfile = NULL
@@ -72,6 +61,7 @@ shinyServer(function(input, output, session) {
       select_deployid = FALSE
       id = NULL
     })
+    
     input_dat$ptt <- as.character(input$ptt_integer)
     res <- wcUtils::wcPOST(keyfile = input$keyfile$datapath)
     ptt_dat <- wcUtils::wcGetPttID(res,ptt=as.character(input_dat$ptt))
@@ -91,9 +81,9 @@ shinyServer(function(input, output, session) {
     }
     shinyjs::show("map-data-header",anim=FALSE)
     shinyjs::show("map",anim=FALSE)
-    shinyjs::show("dive-data-header")
-    shinyjs::show("dive-data")
-    shinyjs::toggle("spinner")
+    shinyjs::show("dive-data-header",anim = FALSE)
+    shinyjs::show("dive-data",anim = FALSE)
+    shinyjs::toggle("spinner",anim = FALSE)
   })
   
   histos <- reactive({
