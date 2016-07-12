@@ -2,8 +2,8 @@ name: wc-viewer
 account: jmlondon
 server: shinyapps.io
 appId: 80493
-bundleId: 371330
+bundleId: 386082
 url: https://jmlondon.shinyapps.io/wc-viewer/
-when: 1455256880.91322
+when: 1456962339.34824
 asMultiple: FALSE
 asStatic: FALSE
