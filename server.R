@@ -98,11 +98,9 @@ shinyServer(function(input, output, session) {
     req(input_dat$dat_files)
     msg_file <- input_dat$dat_files[grep("*-All.csv",
                                           input_dat$dat_files)]
-    msg_dt <- readr::read_csv(msg_file) %>% 
-      dplyr::select(msg_date = matches('Msg Date')) %>% 
-      dplyr::mutate(msg_date = lubridate::parse_date_time(
-        msg_date,orders="mdY HMS"),
-        msg_hour = lubridate::floor_date(msg_date,"hour")) %>% 
+    msg_dt <- wcUtils::read_allmsg(msg_file) %>% 
+      dplyr::select(msg_date) %>% 
+      dplyr::mutate(msg_hour = lubridate::floor_date(msg_date,"hour")) %>%
       dplyr::group_by(msg_hour) %>% 
       dplyr::summarise(msg_count=n())
     

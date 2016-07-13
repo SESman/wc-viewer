@@ -2,6 +2,7 @@
 <html lang="en">
 
   <head>
+    {{ headContent() }}
   <script src="shinyjs/inject.js"></script>
     <!-- Basic Page Needs
 ================================================== -->
@@ -136,7 +137,6 @@
   div#map {
     padding: 10px 0 25px 0px;
   }
-
   </style>
 </head>
 
@@ -181,9 +181,9 @@
               {{ uiOutput("keyFileInput") }}
               <br />
               {{ uiOutput("getDataButton")}}
-              <div id="spinner" style="padding-left: 125px">
-                <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
-                <span class="sr-only">Loading...</span>
+              <div id="spinner" style="padding-left: 85px">
+                {{ spinnerIcon }}
+                <span class="sr-only">Please wait...</span>
               </div>
         </div>
         <div class="usa-width-one-half">
