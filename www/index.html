@@ -2,6 +2,7 @@
 <html lang="en">
 
   <head>
+    {{ suppressDependencies("bootstrap") }}
     {{ headContent() }}
   <script src="shinyjs/inject.js"></script>
     <!-- Basic Page Needs
@@ -24,7 +25,7 @@
 
 <!-- CSS
 ================================================== -->
-  <link rel="stylesheet" href="assets/uswds-0.9.5/css/uswds.min.css">
+  <link rel="stylesheet" href="assets/uswds-0.11.1/css/uswds.min.css">
   
   <style type="text/css">
   header {
@@ -99,6 +100,7 @@
       display: block;
     }
   }
+  
   header h3 {
     padding: 60px 10px 10px 10px;
     margin: 0;
@@ -134,8 +136,40 @@
     margin: 0;
     padding: 5px 5px 5px 15px;
   }
+  section#sst-data-header {
+    background-color: #dce4ef;
+    color: #212121;
+  }
+  section#sst-data-header h3 {
+    margin: 0;
+    padding: 5px 5px 5px 15px;
+  }
   div#map {
     padding: 10px 0 25px 0px;
+  }
+  input[type="checkbox"] {
+    -webkit-appearance: checkbox !important;
+    -moz-appearance: checkbox !important;
+    -ms-appearance: checkbox !important;
+    -o-appearance: checkbox !important;
+    appearance: checkbox !important;
+    opacity: 1;
+    border: none;
+    border-radius: 0;
+    box-sizing: border-box;
+    box-shadow: none;
+    color: none;
+    font-size: 1.7rem;
+    display: inline;
+    margin-left: -2rem;
+    margin-top: -1rem;
+    width: 3rem;
+    outline: none;
+}
+  label.checkbox-inline {
+    display: inline;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
   </style>
 </head>
@@ -159,7 +193,7 @@
     </div>
     </nav>
       <h3 class="usa-display">Marine Wildlife Telemetry Explorer</h3>
-      <p class="usa-font-lead">A collaboration between NOAA Fisheries and Wildlife Computers<br />for the exploration of telemetry data from marine wildlife</p>
+      <p>A collaboration between NOAA Fisheries and Wildlife Computers<br />for the exploration of telemetry data from marine wildlife</p>
     </header>
     <div class="usa-grid-full">
         <div class="usa-alert usa-alert-warning">
@@ -179,6 +213,8 @@
             <h4>ENTER A PTT ID</h4>
               {{ uiOutput("pttInput") }}
               {{ uiOutput("keyFileInput") }}
+            <h4>OCEANOGRAPHIC DATA</h4>
+              {{uiOutput("oceanCheckBoxes")}}
               <br />
               {{ uiOutput("getDataButton")}}
               <div id="spinner" style="padding-left: 85px">
@@ -245,6 +281,22 @@
         "output.timelines_vis!=0",
         dygraphOutput("timelines", height = "250px")
         ) }}
+          </div>
+        </div>
+      </section>
+      
+      <section id="sst-data-header">
+        <div class="usa-grid">
+          <h3 class="usa-header">SST Data</h3>
+        </div>
+        </section>
+      <section id="sst-data">
+        <div class="usa-grid">
+          <div class="usa-width-one-whole">
+            {{ conditionalPanel(
+        "output.sst_vis!=0",
+        plotOutput("sst_data", height = "250px")
+      ) }}
           </div>
         </div>
       </section>

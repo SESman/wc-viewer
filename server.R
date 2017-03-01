@@ -11,6 +11,8 @@ library(leaflet)
 library(viridis)
 library(shinyjs)
 library(gtools)
+library(ggplot2)
+library(xtractomatic)
 
 shinyServer(function(input, output, session) {
   useShinyjs(html = TRUE)
@@ -18,6 +20,8 @@ shinyServer(function(input, output, session) {
   shinyjs::hide("map-data-header", anim = FALSE)
   shinyjs::hide("dive-data",anim = FALSE)
   shinyjs::hide("dive-data-header",anim = FALSE)
+  shinyjs::hide("sst-data",anim = FALSE)
+  shinyjs::hide("sst-data-header",anim = FALSE)
   shinyjs::hide("spinner",anim = FALSE)
   shinyjs::hide("time-mismatch-warning",anim = FALSE)
   
@@ -34,6 +38,8 @@ shinyServer(function(input, output, session) {
     shinyjs::hide("map-data-header",anim = FALSE)
     shinyjs::hide("dive-data",anim = FALSE)
     shinyjs::hide("dive-data-header",anim = FALSE)
+    shinyjs::hide("sst-data",anim = FALSE)
+    shinyjs::hide("sst-data-header",anim = FALSE)
     shinyjs::toggle("spinner",anim = FALSE)
     input_dat$zipfile <- input$zipfile
     input_dat$ptt <- strsplit(input$zipfile$name,'\\.')[[1]][1]
@@ -45,6 +51,8 @@ shinyServer(function(input, output, session) {
     shinyjs::show("map",anim = FALSE)
     shinyjs::show("dive-data-header",anim = FALSE)
     shinyjs::show("dive-data",anim = FALSE)
+    shinyjs::hide("sst-data",anim = FALSE)
+    shinyjs::hide("sst-data-header",anim = FALSE)
     shinyjs::toggle("spinner",anim = FALSE)
   })
 
@@ -54,6 +62,8 @@ shinyServer(function(input, output, session) {
     shinyjs::hide("map-data-header",anim = FALSE)
     shinyjs::hide("dive-data",anim = FALSE)
     shinyjs::hide("dive-data-header",anim = FALSE)
+    shinyjs::hide("sst-data",anim = FALSE)
+    shinyjs::hide("sst-data-header",anim = FALSE)
     with(input_dat,{
       dat_files = NULL
       zipfile = NULL
@@ -127,7 +137,7 @@ shinyServer(function(input, output, session) {
     locs_data <- try(read.csv(locs_data))
     
     if (class(locs_fastgps) != "try-error") {
-      message(paste('using fastgps data for ptt',input_dat$ptt))
+      message(paste('including fastgps data for ptt',input_dat$ptt))
       return(locs_fastgps)
     } else {
       return(locs_data)
@@ -162,6 +172,13 @@ shinyServer(function(input, output, session) {
     actionButton('getWCdata',label="Get Data from Wildlife Computers")
   })
   
+  output$oceanCheckBoxes <- renderUI({
+  checkboxGroupInput("ocean_checks", label = NULL,
+                     c("Sea Surface Temp" = "sst",
+                       "Chorophyll a" = "chla"),
+                     inline = TRUE)
+  })
+  
   output$msgs_per_hour <- renderDygraph({
     m <- xts(msgs_hourly(),msgs_hourly()$msg_hour)
     m <- m[,"msg_count"]
@@ -183,6 +200,7 @@ shinyServer(function(input, output, session) {
       dyAxis("x", label = "Time") %>% 
       dyRangeSelector()
   })
+  
   
   output$timelines <- renderDygraph({
     validate(need(histos(), "No Histos File Detected"))
@@ -327,6 +345,16 @@ shinyServer(function(input, output, session) {
   })
   outputOptions(output, 'timelines_vis', suspendWhenHidden = FALSE)
   
+  output$sst_vis <- reactive({
+    s <- sst_series()
+    if (is.null(s)) {
+      return(0)
+    } else {
+      return(1)
+    }
+  })
+  outputOptions(output, 'sst_vis', suspendWhenHidden = FALSE)
+  
   output$dive_behav_vis <- reactive({
     t <- try(read.csv(behav_file()))
     if (class(t) == "try-error") {
@@ -430,6 +458,35 @@ shinyServer(function(input, output, session) {
     #reproject to get proper wrapping
     locs <- sp::spTransform(locs,CRS("+proj=longlat +lon_wrap=180"))
     return(locs)
+  })
+  
+  sst_series <- reactive({
+    req(all_locs())
+    adp <- all_locs() %>%
+      mutate(loc_dt = as.Date(
+        lubridate::parse_date_time(Date,"H!:M!:S! d!-m!-Y!"))
+      ) %>%
+      mutate(grp = as.character(loc_dt)) %>% 
+      select(grp, loc_dt, Latitude, Longitude) %>% 
+      rename(xpos = Longitude, ypos = Latitude, tpos = loc_dt) %>% 
+      group_by(grp) %>% 
+      filter(n() > 1) %>% 
+      summarize(xlen = sd(xpos, na.rm = TRUE), ylen = sd(ypos, na.rm = TRUE),
+                xpos = mean(xpos, na.rm = TRUE), ypos = mean(ypos, na.rm = TRUE)) %>% 
+      ungroup() %>% 
+      mutate(tpos = as.Date(grp))
+    
+    sst_dat <- xtractomatic::xtracto(xpos = adp$xpos, ypos = adp$ypos, tpos = adp$tpos, 
+                                     dtype = "jplMURSST", 
+                                     xlen = adp$xlen, ylen = adp$ylen)
+    names(sst_dat) <- c("mean_sst","stdev","n","satellite_date","requested_lon_min",
+                        "requested_lon_max","requested_lat_min","requested_lat_max",
+                        "requested_date_median","mad")
+    return(sst_dat)
+  })
+  
+  output$sst_data <- renderPlot({
+    ggplot2::ggplot(sst_series(),aes(x = as.Date(satellite_date),y = mean_sst)) + geom_line()
   })
   
   locs_start <- reactive({
